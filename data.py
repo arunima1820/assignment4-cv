@@ -74,27 +74,61 @@ class CrackerBox(data.Dataset):
         img = cv2.imread(img_path)
         # resize the image and the mask to the YOLO input size
         img = cv2.resize(img, (self.yolo_image_size, self.yolo_image_size))
-        img = torch.tensor(img).permute(2, 0, 1) / 255.0
         # subtract the pixel mean for normalization
         img = img.astype(np.float32, copy=True)
         img -= self.pixel_mean
-        
+
+        img /= 255.0
+        print(img.shape)
+
+        img = torch.tensor(img).permute(2, 0, 1) 
+        print(img.shape)
+
         # load the ground truth box
         gt_box_path = self.gt_paths[idx]
         with open(gt_box_path, 'r') as f:
             bbox = f.readline().strip().split(' ')
         gt_boxes = [float(x) for x in bbox]
 
-        print(gt_boxes)
-
+        print(gt_boxes, self.pixel_mean[0][0][0])
+        x1, y1, x2, y2 = gt_boxes
+        scaled_boxes = [x1 * self.yolo_image_size//self.width, y1*self.yolo_image_size//self.height,
+                  x2*self.yolo_image_size//self.width, y2*self.yolo_image_size//self.height]
+        
+        gt_box_blob = torch.zeros(5, 7, 7)
+        factor = self.yolo_image_size / 7
+        # Compute the grid cell coordinates for the center of the bounding box
+        cx = (scaled_boxes[0] + scaled_boxes[2]) / 2
+        cy = (scaled_boxes[1] + scaled_boxes[3]) / 2
+        cell_x = int(cx // factor)
+        cell_y = int(cy // factor)
+        
+        # Compute the normalized center coordinates and store in the tensor
+        offset_x = (cx - cell_x * 64) / 64
+        offset_y = (cy - cell_y * 64) / 64
+        gt_box_blob[0, cell_y, cell_x] = offset_x
+        gt_box_blob[1, cell_y, cell_x] = offset_y
+        
+        # Compute the normalized width and height and store in the tensor
+        width = scaled_boxes[2] - scaled_boxes[0]
+        height = scaled_boxes[3] - scaled_boxes[1]
+        gt_box_blob[2, cell_y, cell_x] = width / self.yolo_image_size
+        gt_box_blob[3, cell_y, cell_x] = height / self.yolo_image_size
+        
+        # Set the confidence for the cell to 1
+        gt_box_blob[4, cell_y, cell_x] = 1
+        print(gt_box_blob)
         # convert the image and the mask to PyTorch tensors
-        image_blob = torch.from_numpy(img.transpose(2, 0, 1)).float()
-        gt_mask_blob = torch.from_numpy(gt_mask.transpose(2, 0, 1)).float()
+        image_blob = img
+        # initialize gt_mask with zeros
+        gt_mask = torch.zeros((7, 7))
+        # set the corresponding element in gt_mask to 1
+        gt_mask[cell_y, cell_x] = 1
 
         # this is the sample dictionary to be returned from this function
         sample = {'image': image_blob,
                   'gt_box': gt_box_blob,
-                  'gt_mask': gt_mask_blob}
+                  'gt_mask': gt_mask}
 
         return sample
 
