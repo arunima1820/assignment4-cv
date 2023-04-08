@@ -93,31 +93,36 @@ def compute_loss(output, pred_box, gt_box, gt_mask, num_boxes, num_classes, grid
 
     # This is implementation for the loss_obj
     # Follow this example to compute other losses
+    print("OUTPUT", output, gt_box, pred_box)
     loss_obj = torch.sum(box_mask * torch.pow(box_confidence - output[:, 4:5*num_boxes:5], 2.0))
 
     ### ADD YOUR CODE HERE ###
     # Use weight_coord and weight_noobj defined above
     # loss function on x coordinate (cx)
-    loss_x = torch.sum(box_mask * torch.pow((pred_box[:, 0::5, :, :] - gt_box[:, 0::1, :, :]), 2.0))
+    loss_x = torch.sum(box_mask * torch.pow(box_confidence - output[:, 0:5*num_boxes:5], 2.0))
 
     # loss function on y coordinate (cy)
-    loss_y = torch.sum(box_mask * torch.pow((pred_box[:, 1::5, :, :] - gt_box[:, 1::1, :, :]), 2.0))
+    loss_y = torch.sum(box_mask * torch.pow(box_confidence - output[:, 1:5*num_boxes:5], 2.0))
 
     # loss function on width 
-    loss_w = torch.sum(box_mask * torch.pow((pred_box[:, 2::5, :, :] - gt_box[:, 2::1, :, :]), 2.0))
+    loss_w = torch.sum(box_mask * torch.pow(box_confidence - output[:, 2:5*num_boxes:5], 2.0))
 
     # loss function on height
-    loss_h = torch.sum(box_mask * torch.pow((pred_box[:, 3::5, :, :] - gt_box[:, 3::1, :, :]), 2.0))
-
-    # loss function on confidence for objects
-    loss_obj = torch.sum(box_mask * torch.pow((box_confidence - output[:, 4:5*num_boxes:5]), 2.0))
+    loss_h = torch.sum(box_mask * torch.pow(box_confidence - output[:, 3:5*num_boxes:5], 2.0))
 
     # loss function on confidence for non-objects
     loss_noobj = torch.sum((1 - box_mask) * torch.pow((box_confidence - output[:, 4:5*num_boxes:5]), 2.0))
 
+    # Compute the class loss
+    # class_mask = obj_mask.expand_as(gt_box[:, 4:, :, :])
+    # class_prediction = output[:, num_boxes * 5:, :]
+    # class_target = gt_box[:, 4:, :, :]
+    # loss_cls = torch.sum(class_mask * torch.pow(class_prediction - class_target, 2))
+
     # loss function for object class
-    loss_cls = torch.sum(box_mask * torch.pow((output[:, 5*num_boxes:, :, :] - gt_box[:, 4::1, :, :]), 2.0))
-    # print('lx: %.4f, ly: %.4f, lw: %.4f, lh: %.4f, lobj: %.4f, lnoobj: %.4f, lcls: %.4f' % (loss_x, loss_y, loss_w, loss_h, loss_obj, loss_noobj, loss_cls))
+    # loss_cls = torch.sum(box_mask * torch.pow((output[:, 5*num_boxes:, :, :] - gt_box[:, 4::1, :, :]), 2.0))
+    
+    print('lx: %.4f, ly: %.4f, lw: %.4f, lh: %.4f, lobj: %.4f, lnoobj: %.4f, lcls: %.4f' % (loss_x, loss_y, loss_w, loss_h, loss_obj, loss_noobj, loss_cls))
 
     # the totol loss
     loss = loss_x + loss_y + loss_w + loss_h + loss_obj + loss_noobj + loss_cls

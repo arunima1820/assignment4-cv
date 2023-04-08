@@ -84,7 +84,8 @@ class YOLO(nn.Module):
         modules.add_module('flatten', nn.Flatten())
         modules.add_module('fc1', nn.Linear(50176, 256))
         modules.add_module('fc2', nn.Linear(256, 256))
-        modules.add_module('output', nn.Linear(256, 539))
+        # Output Layer
+        modules.add_module("output", nn.Linear(256, 7 * 7 * (5 * self.num_boxes + self.num_classes)))
         modules.add_module('sigmoid', nn.Sigmoid())
 
         return modules
