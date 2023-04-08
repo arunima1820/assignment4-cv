@@ -79,10 +79,8 @@ class CrackerBox(data.Dataset):
         img -= self.pixel_mean
 
         img /= 255.0
-        print(img.shape)
 
         img = torch.tensor(img).permute(2, 0, 1) 
-        print(img.shape)
 
         # load the ground truth box
         gt_box_path = self.gt_paths[idx]
@@ -90,7 +88,6 @@ class CrackerBox(data.Dataset):
             bbox = f.readline().strip().split(' ')
         gt_boxes = [float(x) for x in bbox]
 
-        print(gt_boxes, self.pixel_mean[0][0][0])
         x1, y1, x2, y2 = gt_boxes
         scaled_boxes = [x1 * self.yolo_image_size//self.width, y1*self.yolo_image_size//self.height,
                   x2*self.yolo_image_size//self.width, y2*self.yolo_image_size//self.height]
@@ -117,7 +114,7 @@ class CrackerBox(data.Dataset):
         
         # Set the confidence for the cell to 1
         gt_box_blob[4, cell_y, cell_x] = 1
-        print(gt_box_blob)
+
         # convert the image and the mask to PyTorch tensors
         image_blob = img
         # initialize gt_mask with zeros

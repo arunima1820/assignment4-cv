@@ -93,7 +93,7 @@ def compute_loss(output, pred_box, gt_box, gt_mask, num_boxes, num_classes, grid
 
     # This is implementation for the loss_obj
     # Follow this example to compute other losses
-    print("OUTPUT", output, gt_box, pred_box)
+    print("OUTPUT", output)
     loss_obj = torch.sum(box_mask * torch.pow(box_confidence - output[:, 4:5*num_boxes:5], 2.0))
 
     ### ADD YOUR CODE HERE ###
